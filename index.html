@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content-Disposition by Service Worker</title>
+    <script>
+        function stringToBinaryString(str) {
+            return arrayBufferToBinaryString(new TextEncoder().encode(str));
+        }
+        function arrayBufferToBinaryString(arrayBuffer) {
+            return arrayBuffer.reduce((accumulator, byte) => accumulator + String.fromCharCode(byte), "");
+        }
+        function byteStringToString(byteString) {
+            const chars = [...byteString];
+            const bytes = new Uint8Array(chars.map(ch => ch.charCodeAt(0)));
+            return new TextDecoder().decode(bytes);
+        }
+    </script>
+</head>
+<body>
+<div>
+    Filename: <pre>テスト_0123_📂🔥_4567.txt</pre>
+</div>
+<hr>
+<div>
+    <div>
+        The expected header (<pre style="display: inline">ByteString</pre> from <pre style="display: inline">response.headers.get("content-disposition")</pre>):
+        <script>
+            document.write(stringToBinaryString(
+                `<pre>attachment; filename=テスト_0123_📂🔥_4567.txt</pre>`
+            ));
+        </script>
+    </div>
+    <div>
+        The expected parsed <pre style="display: inline">(ByteString -> String)</pre> header:
+        <script>
+            document.write(`<pre>attachment; filename=テスト_0123_📂🔥_4567.txt</pre>`);
+        </script>
+    </div>
+    <hr>
+    <div>
+        The received header (<pre style="display: inline">ByteString</pre>):
+        <pre id="received"></pre>
+    </div>
+    <div>
+        The received parsed header (<pre style="display: inline">String</pre>):
+        <pre id="parsed"></pre>
+    </div>
+    <hr>
+    <a href="./sw-handled-url">Download file</a>
+</div>
+
+
+<script>
+    (async function () {
+        if ("serviceWorker" in navigator) {
+            const reg = await navigator.serviceWorker.register("./sw.js");
+            console.log(reg);
+            if (!reg.active) {
+                console.log("reload page");
+                location.reload();
+                return;
+            }
+            const response = await fetch("./sw-handled-url");
+            const byteString = response.headers.get("content-disposition");
+            document.querySelector("#received").textContent = byteString;
+            document.querySelector("#parsed").textContent = byteStringToString(byteString);
+        }
+    })();
+</script>
+</body>
+</html>
